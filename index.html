@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handwritten Digit Recognition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Handwritten Digit Recognition</h1>
+            <p class="subtitle">Draw a digit (0-9) and let AI recognize it!</p>
+        </header>
+
+        <main>
+            <div class="canvas-container">
+                <canvas id="drawingCanvas" width="280" height="280"></canvas>
+            </div>
+
+            <div class="controls">
+                <button id="clearBtn" class="btn btn-secondary">Clear Canvas</button>
+                <button id="predictBtn" class="btn btn-primary">Predict Digit</button>
+            </div>
+
+            <div class="results" id="results" style="display: none;">
+                <div class="prediction-display">
+                    <h2>Prediction:</h2>
+                    <div class="predicted-digit" id="predictedDigit">-</div>
+                    <div class="confidence" id="confidence">Confidence: -</div>
+                </div>
+
+                <div class="feedback-section" id="feedbackSection">
+                    <h3>Is this prediction correct?</h3>
+                    <div class="feedback-buttons">
+                        <button id="correctBtn" class="btn btn-success">✓ Correct</button>
+                        <button id="wrongBtn" class="btn btn-danger">✗ Wrong</button>
+                    </div>
+                </div>
+
+                <div class="correction-section" id="correctionSection" style="display: none;">
+                    <h3>What digit did you draw?</h3>
+                    <div class="digit-selector">
+                        <button class="digit-btn" data-digit="0">0</button>
+                        <button class="digit-btn" data-digit="1">1</button>
+                        <button class="digit-btn" data-digit="2">2</button>
+                        <button class="digit-btn" data-digit="3">3</button>
+                        <button class="digit-btn" data-digit="4">4</button>
+                        <button class="digit-btn" data-digit="5">5</button>
+                        <button class="digit-btn" data-digit="6">6</button>
+                        <button class="digit-btn" data-digit="7">7</button>
+                        <button class="digit-btn" data-digit="8">8</button>
+                        <button class="digit-btn" data-digit="9">9</button>
+                    </div>
+                </div>
+
+                <div class="learning-status" id="learningStatus" style="display: none;">
+                    <div class="learning-message" id="learningMessage"></div>
+                </div>
+
+                <div class="probabilities">
+                    <h3>Probability Distribution</h3>
+                    <div class="prob-bars" id="probBars">
+                        <!-- Probability bars will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="instructions">
+                <h3>Instructions:</h3>
+                <ul>
+                    <li>Draw a digit (0-9) on the canvas using your mouse or touchscreen</li>
+                    <li>Try to draw in the center and make it reasonably large</li>
+                    <li>Click "Predict Digit" to see what the AI thinks you drew</li>
+                    <li>Mark the prediction as "Correct" or "Wrong" to help the AI learn</li>
+                    <li>If wrong, select the correct digit to teach the AI</li>
+                    <li>Click "Clear Canvas" to start over</li>
+                </ul>
+            </div>
+
+            <div class="status" id="status"></div>
+        </main>
+
+        <footer>
+            <p>Powered by TensorFlow & Neural Networks | Training Accuracy: 97.29%</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
