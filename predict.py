@@ -13,6 +13,7 @@ import base64
 import os
 import json
 from datetime import datetime
+from feature_extractor import GeometricFeatureExtractor
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
@@ -26,6 +27,10 @@ if not os.path.exists(TRAINING_DATA_DIR):
 print("Loading model...")
 model = tf.keras.models.load_model('digit_model.h5')
 print("Model loaded successfully!")
+
+# Initialize feature extractor
+feature_extractor = GeometricFeatureExtractor()
+print("Feature extractor initialized!")
 
 # Counter for collected samples
 collected_samples = 0
@@ -84,11 +89,15 @@ def predict():
         # Process image
         image_array = process_image(data['image'])
 
-        # Reshape for model input (1, 28, 28)
-        image_array = image_array.reshape(1, 28, 28)
+        # Extract geometric features
+        features = feature_extractor.extract_all_features(image_array)
+        features = features.reshape(1, -1)
 
-        # Make prediction
-        predictions = model.predict(image_array, verbose=0)[0]
+        # Reshape for model input (1, 28, 28, 1)
+        image_array_cnn = image_array.reshape(1, 28, 28, 1)
+
+        # Make prediction with both inputs
+        predictions = model.predict([image_array_cnn, features], verbose=0)[0]
 
         # Get predicted digit and confidence
         predicted_digit = int(np.argmax(predictions))
@@ -198,10 +207,18 @@ def retrain():
         user_labels = np.array(user_labels)
 
         print(f"\nRetraining with {len(user_images)} user samples...")
+        print("Extracting geometric features from user data...")
 
-        # Fine-tune the model
+        # Extract features from user images
+        from feature_extractor import extract_features_batch
+        user_features = extract_features_batch(user_images)
+
+        # Reshape images for CNN input
+        user_images_cnn = user_images.reshape(-1, 28, 28, 1)
+
+        # Fine-tune the model with both inputs
         history = model.fit(
-            user_images,
+            [user_images_cnn, user_features],
             user_labels,
             epochs=10,
             batch_size=min(32, len(user_images)),

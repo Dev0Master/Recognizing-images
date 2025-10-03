@@ -10,6 +10,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import matplotlib.pyplot as plt
+from feature_extractor import extract_features_batch
 
 
 def load_mnist_images(filename):
@@ -41,20 +42,34 @@ def load_mnist_labels(filename):
 
 
 def build_model():
-    """Build a simple neural network for digit classification."""
-    model = keras.Sequential([
-        # Flatten 28x28 images to 784-dimensional vectors
-        layers.Flatten(input_shape=(28, 28)),
+    """Build a neural network with CNN and geometric feature learning."""
+    # Image input branch (CNN)
+    image_input = keras.Input(shape=(28, 28, 1), name='image_input')
 
-        # Hidden layer with 128 neurons and ReLU activation
-        layers.Dense(128, activation='relu'),
+    # Convolutional layers for pattern recognition
+    x = layers.Conv2D(32, (3, 3), activation='relu')(image_input)
+    x = layers.MaxPooling2D((2, 2))(x)
+    x = layers.Conv2D(64, (3, 3), activation='relu')(x)
+    x = layers.MaxPooling2D((2, 2))(x)
+    x = layers.Flatten()(x)
+    x = layers.Dense(128, activation='relu')(x)
+    x = layers.Dropout(0.3)(x)
 
-        # Dropout for regularization (prevents overfitting)
-        layers.Dropout(0.2),
+    # Geometric features input branch
+    feature_input = keras.Input(shape=(15,), name='feature_input')
+    f = layers.Dense(32, activation='relu')(feature_input)
+    f = layers.Dropout(0.2)(f)
 
-        # Output layer with 10 neurons (one per digit 0-9)
-        layers.Dense(10, activation='softmax')
-    ])
+    # Combine both branches
+    combined = layers.concatenate([x, f])
+    combined = layers.Dense(64, activation='relu')(combined)
+    combined = layers.Dropout(0.2)(combined)
+
+    # Output layer
+    output = layers.Dense(10, activation='softmax', name='output')(combined)
+
+    # Create model with two inputs
+    model = keras.Model(inputs=[image_input, feature_input], outputs=output)
 
     return model
 
@@ -65,25 +80,36 @@ def main():
     print("=" * 60)
 
     # Load training data
-    print("\n[1/6] Loading training images...")
+    print("\n[1/7] Loading training images...")
     train_images = load_mnist_images('train-images.idx3-ubyte')
     print(f"      Loaded {len(train_images)} training images")
 
-    print("[2/6] Loading training labels...")
+    print("[2/7] Loading training labels...")
     train_labels = load_mnist_labels('train-labels.idx1-ubyte')
     print(f"      Loaded {len(train_labels)} training labels")
 
     # Load test data
-    print("[3/6] Loading test images...")
+    print("[3/7] Loading test images...")
     test_images = load_mnist_images('t10k-images.idx3-ubyte')
     print(f"      Loaded {len(test_images)} test images")
 
-    print("[4/6] Loading test labels...")
+    print("[4/7] Loading test labels...")
     test_labels = load_mnist_labels('t10k-labels.idx1-ubyte')
     print(f"      Loaded {len(test_labels)} test labels")
 
+    # Extract geometric features
+    print("\n[5/7] Extracting geometric features from training data...")
+    print("      (circles, triangles, lines, loops, symmetry, etc.)")
+    train_features = extract_features_batch(train_images)
+    print(f"      Extracted {train_features.shape[1]} features per image")
+
+    print("[6/7] Extracting geometric features from test data...")
+    test_features = extract_features_batch(test_images)
+    print(f"      Extracted {test_features.shape[1]} features per image")
+
     # Build and compile the model
-    print("\n[5/6] Building neural network...")
+    print("\n[7/7] Building enhanced neural network...")
+    print("      CNN branch + Geometric feature branch")
     model = build_model()
 
     model.compile(
@@ -95,12 +121,16 @@ def main():
     print("\nModel Architecture:")
     model.summary()
 
+    # Prepare data for dual-input model
+    train_images_cnn = train_images.reshape(-1, 28, 28, 1)
+    test_images_cnn = test_images.reshape(-1, 28, 28, 1)
+
     # Train the model
-    print("\n[6/6] Training model (this may take 2-3 minutes)...")
+    print("\nTraining model with self-learning features...")
     print("-" * 60)
 
     history = model.fit(
-        train_images,
+        [train_images_cnn, train_features],
         train_labels,
         epochs=5,
         batch_size=128,
@@ -111,7 +141,11 @@ def main():
     # Evaluate on test data
     print("\n" + "=" * 60)
     print("Evaluating model on test data...")
-    test_loss, test_accuracy = model.evaluate(test_images, test_labels, verbose=0)
+    test_loss, test_accuracy = model.evaluate(
+        [test_images_cnn, test_features],
+        test_labels,
+        verbose=0
+    )
 
     print(f"\nTest Accuracy: {test_accuracy * 100:.2f}%")
     print(f"Test Loss: {test_loss:.4f}")
@@ -122,7 +156,10 @@ def main():
 
     # Visualize some predictions
     print("\nGenerating sample predictions...")
-    predictions = model.predict(test_images[:5], verbose=0)
+    predictions = model.predict(
+        [test_images_cnn[:5], test_features[:5]],
+        verbose=0
+    )
 
     plt.figure(figsize=(15, 3))
     for i in range(5):
